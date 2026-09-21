@@ -1,0 +1,58 @@
+1. Academic Performance
+
+Use the student's overall academic performance.
+
+For example:
+
+90 → excellent academics
+80 → very good
+70 → good
+60 → average
+
+For a student with 85% marks, enter:
+
+Academic Performance = 85
+
+2. Extra-Curricular Score
+
+Give a score based on participation and achievements in:
+
+Sports
+Clubs
+Cultural activities
+Competitions
+Volunteering
+Other college activities
+
+Example:
+
+No participation → 30–40
+Some participation → 50–65
+Regular participation → 70–80
+Many achievements → 85–100
+
+Example:
+
+Extra-Curricular Score = 70
+
+3. Communication Skills
+
+Give a score based on:
+
+Speaking
+Listening
+Presentation
+Confidence
+Professional communication
+
+Example:
+
+Weak → 40–50
+Average → 60–70
+Good → 70–80
+Very good → 80–90
+Excellent → 90–100
+
+Example:
+
+Communication Skills = 80
