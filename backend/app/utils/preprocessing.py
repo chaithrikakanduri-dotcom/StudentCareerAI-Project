@@ -1,24 +1,19 @@
 import re
-import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
 
-# Download required NLTK resources
-try:
-    stopwords.words("english")
-except LookupError:
-    print("NLTK stopwords data not found")
+# ============================================================
+# INITIALIZE NLP TOOLS
+# ============================================================
 
-try:
-    nltk.data.find("corpora/wordnet")
-except LookupError:
-    print("NLTK wordnet data not found")
-
-# Initialize NLP tools
 STOP_WORDS = set(stopwords.words("english"))
 LEMMATIZER = WordNetLemmatizer()
 
+
+# ============================================================
+# CLEAN TEXT
+# ============================================================
 
 def clean_text(text):
     """
@@ -51,6 +46,10 @@ def clean_text(text):
     return " ".join(cleaned_words)
 
 
+# ============================================================
+# EXTRACT WORDS
+# ============================================================
+
 def extract_words(text):
     """
     Converts cleaned text into a list of words.
@@ -60,6 +59,10 @@ def extract_words(text):
 
     return cleaned_text.split()
 
+
+# ============================================================
+# TEST
+# ============================================================
 
 if __name__ == "__main__":
 
