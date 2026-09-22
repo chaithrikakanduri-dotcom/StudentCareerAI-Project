@@ -77,7 +77,7 @@ function Profile() {
 
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/api/student-profile?email=${encodeURIComponent(
+          `http://studentcareerai-project-production.up.railway.app/api/student-profile?email=${encodeURIComponent(
             student.email
           )}`
         );
