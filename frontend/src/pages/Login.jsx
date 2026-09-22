@@ -18,7 +18,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://studentcareerai-project-production.up.railway/api/login-student",
+        "http://studentcareerai-project-production.up.railway.app/api/login-student",
         {
           method: "POST",
           headers: {
