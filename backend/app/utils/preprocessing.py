@@ -8,13 +8,12 @@ from nltk.stem import WordNetLemmatizer
 try:
     stopwords.words("english")
 except LookupError:
-    nltk.download("stopwords")
+    print("NLTK stopwords data not found")
 
 try:
     nltk.data.find("corpora/wordnet")
 except LookupError:
-    nltk.download("wordnet")
-
+    print("NLTK wordnet data not found")
 
 # Initialize NLP tools
 STOP_WORDS = set(stopwords.words("english"))
