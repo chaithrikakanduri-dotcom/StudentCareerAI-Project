@@ -33,7 +33,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        "http://studentcareerai-project-production.up.railway.app/api/register-student",
+        "https://studentcareerai-project-production.up.railway.app/api/register-student",
         {
           method: "POST",
           headers: {

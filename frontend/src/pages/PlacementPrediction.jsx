@@ -62,7 +62,7 @@ function PlacementPredictionPage() {
       console.log(payload);
 
       const response = await fetch(
-        "http://studentcareerai-project-production.up.railway.app/api/predict-placement",
+        "https://studentcareerai-project-production.up.railway.app/api/predict-placement",
         {
           method: "POST",
           headers: {
