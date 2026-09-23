@@ -69,7 +69,6 @@ def extract_experience(text):
         match = re.search(pattern, text)
 
         if match:
-
             try:
                 return float(match.group(1))
             except ValueError:
@@ -79,7 +78,7 @@ def extract_experience(text):
 
 
 # ============================================================
-# EXPERIENCE MATCH
+# EXPERIENCE SCORE
 # ============================================================
 
 def calculate_experience_score(
@@ -88,20 +87,16 @@ def calculate_experience_score(
 ):
 
     try:
-
         student_experience = float(student_experience)
         required_experience = float(required_experience)
 
     except (ValueError, TypeError):
-
         return 0.0
 
     if required_experience <= 0:
-
         return 1.0
 
     if student_experience >= required_experience:
-
         return 1.0
 
     return max(
@@ -114,7 +109,7 @@ def calculate_experience_score(
 
 
 # ============================================================
-# EDUCATION MATCH
+# EDUCATION SCORE
 # ============================================================
 
 def calculate_education_score(
@@ -123,104 +118,131 @@ def calculate_education_score(
 ):
 
     student_text = str(student_text).lower()
-
     education_requirement = str(
         education_requirement
     ).lower()
 
-    education_keywords = [
+    # More specific education matching
+    education_groups = {
 
-        "b.tech",
-        "btech",
-        "b.e",
-        "be",
-        "bca",
-        "b.sc",
-        "bsc",
-        "bachelor",
+        "btech": [
+            "b.tech",
+            "btech",
+            "bachelor of technology"
+        ],
 
-        "m.tech",
-        "mtech",
-        "mca",
-        "m.sc",
-        "msc",
-        "master",
+        "be": [
+            "b.e",
+            "b.e.",
+            "be",
+            "bachelor of engineering"
+        ],
 
-        "diploma",
-        "phd",
-        "doctorate"
-    ]
+        "bca": [
+            "bca",
+            "bachelor of computer applications"
+        ],
+
+        "bsc": [
+            "b.sc",
+            "bsc",
+            "bachelor of science"
+        ],
+
+        "mtech": [
+            "m.tech",
+            "mtech",
+            "master of technology"
+        ],
+
+        "mca": [
+            "mca",
+            "master of computer applications"
+        ],
+
+        "msc": [
+            "m.sc",
+            "msc",
+            "master of science"
+        ],
+
+        "diploma": [
+            "diploma"
+        ]
+    }
 
     student_education = []
 
-    for keyword in education_keywords:
+    for education_name, keywords in education_groups.items():
 
-        if keyword in student_text:
+        for keyword in keywords:
 
-            student_education.append(keyword)
+            if keyword in student_text:
+
+                student_education.append(
+                    education_name
+                )
+
+                break
 
     if not student_education:
-
         return 0.5
 
-    # Direct match
+    # Direct education match
     for education in student_education:
 
-        if education in education_requirement:
+        keywords = education_groups[education]
 
-            return 1.0
+        for keyword in keywords:
 
-    # Bachelor's match
+            if keyword in education_requirement:
+
+                return 1.0
+
+    # Bachelor level compatibility
+    bachelor_education = [
+        "btech",
+        "be",
+        "bca",
+        "bsc"
+    ]
+
     if (
         "bachelor" in education_requirement
         and any(
-            x in student_text
-            for x in [
-                "b.tech",
-                "btech",
-                "b.e",
-                "be",
-                "bca",
-                "b.sc",
-                "bsc",
-                "bachelor"
-            ]
+            education in student_education
+            for education in bachelor_education
         )
     ):
-
         return 1.0
 
-    # Master's match
+    # Master level compatibility
+    master_education = [
+        "mtech",
+        "mca",
+        "msc"
+    ]
+
     if (
         "master" in education_requirement
         and any(
-            x in student_text
-            for x in [
-                "m.tech",
-                "mtech",
-                "mca",
-                "m.sc",
-                "msc",
-                "master"
-            ]
+            education in student_education
+            for education in master_education
         )
     ):
-
         return 1.0
 
-    # Diploma match
     if (
         "diploma" in education_requirement
-        and "diploma" in student_text
+        and "diploma" in student_education
     ):
-
         return 1.0
 
     return 0.0
 
 
 # ============================================================
-# SKILL MATCH
+# SKILL SCORE
 # ============================================================
 
 def calculate_skill_score(
@@ -237,7 +259,6 @@ def calculate_skill_score(
     ]
 
     if not skills:
-
         return 0.0
 
     matched_skills = 0
@@ -245,14 +266,122 @@ def calculate_skill_score(
     for skill in skills:
 
         if skill in student_text:
-
             matched_skills += 1
 
     return matched_skills / len(skills)
 
 
 # ============================================================
-# WORKPLACE MAPPING
+# INTEREST SCORE
+# ============================================================
+
+def calculate_interest_score(
+    student_text,
+    job_title,
+    category
+):
+
+    student_text = str(student_text).lower()
+
+    job_title = str(job_title).lower()
+
+    category = str(category).lower()
+
+    # Interest / career keywords
+    interest_groups = {
+
+        "artificial intelligence": [
+            "ai",
+            "artificial intelligence",
+            "machine learning",
+            "ml",
+            "deep learning"
+        ],
+
+        "data": [
+            "data",
+            "data science",
+            "data analysis",
+            "analytics",
+            "statistics"
+        ],
+
+        "software development": [
+            "software",
+            "development",
+            "developer",
+            "programming",
+            "coding"
+        ],
+
+        "web development": [
+            "web",
+            "website",
+            "frontend",
+            "backend",
+            "full stack",
+            "fullstack"
+        ],
+
+        "cloud": [
+            "cloud",
+            "aws",
+            "azure",
+            "gcp",
+            "devops"
+        ],
+
+        "cybersecurity": [
+            "cybersecurity",
+            "cyber security",
+            "security",
+            "ethical hacking",
+            "hacking"
+        ],
+
+        "database": [
+            "database",
+            "sql",
+            "mysql",
+            "mongodb",
+            "database management"
+        ]
+    }
+
+    matched_interest_groups = 0
+    total_interest_groups = 0
+
+    for group, keywords in interest_groups.items():
+
+        student_has_interest = any(
+            keyword in student_text
+            for keyword in keywords
+        )
+
+        if student_has_interest:
+
+            total_interest_groups += 1
+
+            job_has_interest = any(
+                keyword in job_title or
+                keyword in category
+                for keyword in keywords
+            )
+
+            if job_has_interest:
+                matched_interest_groups += 1
+
+    if total_interest_groups == 0:
+        return 0.0
+
+    return (
+        matched_interest_groups /
+        total_interest_groups
+    )
+
+
+# ============================================================
+# WORKPLACE
 # ============================================================
 
 def get_workplace(
@@ -261,10 +390,8 @@ def get_workplace(
 ):
 
     job_title = str(job_title).lower()
-
     category = str(category).lower()
 
-    # Cloud / DevOps
     if (
         "cloud" in job_title
         or "devops" in job_title
@@ -274,7 +401,6 @@ def get_workplace(
 
         return "Cloud / IT Companies / Remote"
 
-    # Data / AI
     if (
         "data scientist" in job_title
         or "data analyst" in job_title
@@ -287,7 +413,6 @@ def get_workplace(
 
         return "Data / AI Companies / Research / Remote"
 
-    # Web development
     if (
         "frontend" in job_title
         or "backend" in job_title
@@ -298,7 +423,6 @@ def get_workplace(
 
         return "Software / Web Companies / Remote"
 
-    # Software
     if (
         "software" in job_title
         or "developer" in job_title
@@ -308,7 +432,6 @@ def get_workplace(
 
         return "IT / Software Companies / Hybrid"
 
-    # Cybersecurity
     if (
         "security" in job_title
         or "cyber" in job_title
@@ -317,7 +440,6 @@ def get_workplace(
 
         return "Cybersecurity / IT Companies / Security Operations"
 
-    # Database
     if (
         "database" in job_title
         or "database" in category
@@ -325,7 +447,6 @@ def get_workplace(
 
         return "IT / Database Systems / Cloud"
 
-    # Default
     return "IT / Corporate / Hybrid"
 
 
@@ -338,8 +459,10 @@ def recommend_careers(
     top_n=5
 ):
 
-    if not resume_text or not str(resume_text).strip():
-
+    if (
+        not resume_text
+        or not str(resume_text).strip()
+    ):
         return []
 
     # --------------------------------------------------------
@@ -356,6 +479,10 @@ def recommend_careers(
         prepare_job_text,
         axis=1
     )
+
+    # --------------------------------------------------------
+    # STUDENT INPUT
+    # --------------------------------------------------------
 
     student_text = str(resume_text)
 
@@ -381,19 +508,17 @@ def recommend_careers(
 
     job_vectors = tfidf_matrix[1:]
 
-    # --------------------------------------------------------
-    # COSINE SIMILARITY
-    # --------------------------------------------------------
-
     similarity_scores = cosine_similarity(
         student_vector,
         job_vectors
     ).flatten()
 
-    job_roles["Text Similarity"] = similarity_scores
+    job_roles["Text Similarity"] = (
+        similarity_scores
+    )
 
     # --------------------------------------------------------
-    # STUDENT EXPERIENCE
+    # EXPERIENCE
     # --------------------------------------------------------
 
     student_experience = extract_experience(
@@ -401,7 +526,7 @@ def recommend_careers(
     )
 
     # --------------------------------------------------------
-    # CALCULATE FINAL SCORE
+    # FINAL SCORE
     # --------------------------------------------------------
 
     final_scores = []
@@ -412,46 +537,64 @@ def recommend_careers(
             row["Text Similarity"]
         )
 
-        education_score = calculate_education_score(
-            student_text,
-            row["Education Requirement"]
+        education_score = (
+            calculate_education_score(
+                student_text,
+                row["Education Requirement"]
+            )
         )
 
-        experience_score = calculate_experience_score(
-            student_experience,
-            row["Experience Years"]
+        skill_score = (
+            calculate_skill_score(
+                student_text,
+                row["Required Skills"]
+            )
         )
 
-        skill_score = calculate_skill_score(
-            student_text,
-            row["Required Skills"]
+        interest_score = (
+            calculate_interest_score(
+                student_text,
+                row["Job Title"],
+                row["Category"]
+            )
+        )
+
+        experience_score = (
+            calculate_experience_score(
+                student_experience,
+                row["Experience Years"]
+            )
         )
 
         # ----------------------------------------------------
         # WEIGHTED SCORE
         # ----------------------------------------------------
-        #
-        # Skills       = 45%
-        # TF-IDF       = 30%
-        # Education    = 15%
-        # Experience   = 10%
-        #
 
         final_score = (
-            (skill_score * 0.45) +
-            (text_score * 0.30) +
-            (education_score * 0.15) +
-            (experience_score * 0.10)
+
+            (skill_score * 0.40)
+
+            + (interest_score * 0.25)
+
+            + (text_score * 0.20)
+
+            + (education_score * 0.10)
+
+            + (experience_score * 0.05)
         )
 
         final_scores.append(
             final_score
         )
 
+    # --------------------------------------------------------
+    # STORE FINAL SCORE
+    # --------------------------------------------------------
+
     job_roles["Final Score"] = final_scores
 
     # --------------------------------------------------------
-    # SORT TOP CAREERS
+    # SORT DYNAMICALLY
     # --------------------------------------------------------
 
     recommendations = (
@@ -464,32 +607,28 @@ def recommend_careers(
     )
 
     # --------------------------------------------------------
-    # CREATE RESULTS
+    # CREATE RESULT
     # --------------------------------------------------------
 
     results = []
 
     for _, row in recommendations.iterrows():
 
-        score = float(
-            row["Final Score"]
-        ) * 100
+        score = (
+            float(row["Final Score"])
+            * 100
+        )
 
         score = max(
             0,
-            min(
-                100,
-                score
-            )
+            min(100, score)
         )
 
-        # ----------------------------------------------------
-        # REQUIRED SKILLS
-        # ----------------------------------------------------
-        # Keep this internally for Skill Gap Analysis.
-        # It does NOT have to be displayed in Career
-        # Recommendation UI.
-        # ----------------------------------------------------
+        # IMPORTANT:
+        # Required Skills are kept in backend
+        # for Skill Gap Analysis.
+        # They are NOT intended as Career
+        # Recommendation display fields.
 
         required_skills = [
             skill.strip()
@@ -499,117 +638,30 @@ def recommend_careers(
             if skill.strip()
         ]
 
-        # ----------------------------------------------------
-        # WORKPLACE
-        # ----------------------------------------------------
-
         workplace = get_workplace(
             row["Job Title"],
             row["Category"]
         )
 
-        # ----------------------------------------------------
-        # FINAL RESULT
-        # ----------------------------------------------------
-
         results.append({
 
-            "job_title": row["Job Title"],
+            "job_title":
+                row["Job Title"],
 
-            "category": row["Category"],
+            "category":
+                row["Category"],
 
-            "similarity_score": round(
-                score,
-                2
-            ),
+            "similarity_score":
+                round(score, 2),
 
-            "required_skills": required_skills,
+            "required_skills":
+                required_skills,
 
-            "workplace": workplace,
+            "workplace":
+                workplace,
 
-            "salary_range": row["Salary Range"]
+            "salary_range":
+                row["Salary Range"]
         })
 
     return results
-
-
-# ============================================================
-# TEST
-# ============================================================
-
-if __name__ == "__main__":
-
-    sample_resume = """
-
-    Education: Bachelor's in Computer Science
-
-    Experience: 2 years
-
-    Skills:
-    Python,
-    Java,
-    SQL,
-    React,
-    Machine Learning,
-    Docker
-
-    Interests:
-    Artificial Intelligence,
-    Software Development,
-    Data Science
-
-    """
-
-    print("=" * 70)
-
-    print(
-        "STUDENT CAREER AI - DYNAMIC CAREER RECOMMENDER"
-    )
-
-    print("=" * 70)
-
-    recommendations = recommend_careers(
-        sample_resume,
-        top_n=5
-    )
-
-    print(
-        "\nTOP 5 CAREER RECOMMENDATIONS"
-    )
-
-    print("-" * 70)
-
-    for index, recommendation in enumerate(
-        recommendations,
-        start=1
-    ):
-
-        print(
-            f"\n{index}. "
-            f"{recommendation['job_title']}"
-        )
-
-        print(
-            f"Category: "
-            f"{recommendation['category']}"
-        )
-
-        print(
-            f"Match: "
-            f"{recommendation['similarity_score']}%"
-        )
-
-        print(
-            f"Workplace: "
-            f"{recommendation['workplace']}"
-        )
-
-        print(
-            f"Salary: "
-            f"{recommendation['salary_range']}"
-        )
-
-        # Required skills are intentionally not printed
-        # here because they are for Skill Gap Analysis.
-
-        print("-" * 70)
