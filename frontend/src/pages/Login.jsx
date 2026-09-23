@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 import loginImage from "../assets/login.png";
@@ -18,7 +19,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://studentcareerai-project-production.up.railway.app/api/login-student",
+        "https://studentcareerai-project-production.up.railway.app/api/login-student",
         {
           method: "POST",
           headers: {
