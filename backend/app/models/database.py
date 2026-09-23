@@ -1,17 +1,22 @@
+import os
 import pymysql
 
 
-# MySQL database configuration
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "StudentCareer@123"
-DB_NAME = "student_career_ai"
-DB_PORT = 3306
+# ============================================================
+# RAILWAY / LOCAL MYSQL DATABASE CONFIGURATION
+# ============================================================
+
+DB_HOST = os.getenv("MYSQLHOST", "localhost")
+DB_USER = os.getenv("MYSQLUSER", "root")
+DB_PASSWORD = os.getenv("MYSQLPASSWORD", "StudentCareer@123")
+DB_NAME = os.getenv("MYSQLDATABASE", "student_career_ai")
+DB_PORT = int(os.getenv("MYSQLPORT", "3306"))
 
 
 def get_connection():
     """
-    Creates and returns a connection to MySQL.
+    Creates and returns a MySQL database connection.
+    Works with Railway MySQL and local MySQL.
     """
 
     connection = pymysql.connect(
