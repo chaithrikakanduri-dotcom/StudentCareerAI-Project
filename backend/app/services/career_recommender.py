@@ -485,6 +485,9 @@ def recommend_careers(
     # --------------------------------------------------------
 
     student_text = str(resume_text)
+    print("===== CAREER INPUT RECEIVED =====")
+    print(student_text)
+    print("=================================")
 
     # --------------------------------------------------------
     # TF-IDF
