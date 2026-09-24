@@ -1,134 +1,475 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./SkillGap.css";
 
-const careerData = {
-  "AI/ML Engineer": {
-    icon: "🤖",
-    category: "AI & Machine Learning",
-    requiredSkills: [
-      "Python",
-      "Machine Learning",
-      "SQL",
-      "Statistics",
-      "TensorFlow",
-      "Deep Learning",
-      "Data Analysis",
-    ],
-    defaultSkills: ["Python", "SQL", "Machine Learning", "Flask"],
-    jobReadiness: 72,
-  },
+const getCareerIcon = (jobTitle) => {
+  const title = String(jobTitle).toLowerCase();
 
-  "Data Scientist": {
-    icon: "📊",
-    category: "Data & Analytics",
-    requiredSkills: [
-      "Python",
-      "SQL",
-      "Statistics",
-      "Pandas",
-      "Data Visualization",
-      "Machine Learning",
-      "Power BI",
-    ],
-    defaultSkills: ["Python", "SQL", "Machine Learning", "Pandas"],
-    jobReadiness: 75,
-  },
+  if (
+    title.includes("ai") ||
+    title.includes("machine")
+  ) {
+    return "🤖";
+  }
 
-  "Software Developer": {
-    icon: "💻",
-    category: "Software Development",
-    requiredSkills: [
-      "Java",
-      "Python",
-      "Data Structures",
-      "Algorithms",
-      "OOP",
-      "Git",
-      "Problem Solving",
-    ],
-    defaultSkills: ["Java", "Python", "OOP", "Git"],
-    jobReadiness: 70,
-  },
+  if (title.includes("data")) {
+    return "📊";
+  }
 
-  "Full Stack Developer": {
-    icon: "🌐",
-    category: "Web Development",
-    requiredSkills: [
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "React",
-      "Node.js",
-      "SQL",
-      "Git",
-    ],
-    defaultSkills: ["HTML", "CSS", "JavaScript", "React"],
-    jobReadiness: 68,
-  },
+  if (title.includes("cloud")) {
+    return "☁️";
+  }
 
-  "Cloud Engineer": {
-    icon: "☁️",
-    category: "Cloud & Infrastructure",
-    requiredSkills: [
-      "Linux",
-      "Networking",
-      "AWS",
-      "Docker",
-      "Kubernetes",
-      "Python",
-      "Git",
-    ],
-    defaultSkills: ["Linux", "Python", "Git"],
-    jobReadiness: 60,
-  },
+  if (
+    title.includes("web") ||
+    title.includes("frontend") ||
+    title.includes("backend")
+  ) {
+    return "🌐";
+  }
+
+  if (title.includes("security")) {
+    return "🛡️";
+  }
+
+  if (
+    title.includes("mobile") ||
+    title.includes("android") ||
+    title.includes("ios")
+  ) {
+    return "📱";
+  }
+
+  return "💻";
+};
+
+// ============================================================
+// NORMALIZE SKILL
+// ============================================================
+
+const normalizeSkill = (skill) => {
+  let value = String(skill)
+    .toLowerCase()
+    .trim();
+
+  const replacements = {
+    "c plus plus": "c++",
+    cpp: "c++",
+    "problem-solving": "problem solving",
+    "problem solving skills": "problem solving",
+    "software design skills": "software design",
+    javascript: "javascript",
+    js: "javascript",
+    reactjs: "react",
+    "react.js": "react",
+    nodejs: "node.js",
+    node: "node.js",
+  };
+
+  return replacements[value] || value;
+};
+
+// ============================================================
+// CHECK WHETHER STUDENT HAS REQUIRED SKILL
+// ============================================================
+
+const studentHasSkill = (studentSkills, requiredSkill) => {
+  const required = normalizeSkill(requiredSkill);
+
+  if (!required) {
+    return false;
+  }
+
+  return studentSkills.some((studentSkill) => {
+    const student = normalizeSkill(studentSkill);
+
+    if (!student) {
+      return false;
+    }
+
+    // Exact match
+    if (student === required) {
+      return true;
+    }
+
+    // If student's skills are stored as one long text,
+    // check whether the required skill exists in that text.
+    const studentText = ` ${student} `;
+
+    const requiredText = ` ${required} `;
+
+    return studentText.includes(requiredText);
+  });
 };
 
 function SkillGap() {
-  const [selectedCareer, setSelectedCareer] =
-    useState("AI/ML Engineer");
+  // ============================================================
+  // DYNAMIC DATA
+  // ============================================================
 
-  const [studentSkills, setStudentSkills] = useState(
-    careerData["AI/ML Engineer"].defaultSkills
-  );
-
+  const [careerData, setCareerData] = useState({});
+  const [selectedCareer, setSelectedCareer] = useState("");
+  const [studentSkills, setStudentSkills] = useState([]);
+  const [analysis, setAnalysis] = useState(null);
   const [showCareerList, setShowCareerList] = useState(false);
 
-  const career = careerData[selectedCareer];
+  // ============================================================
+  // LOAD CAREERS FROM BACKEND / CSV
+  // ============================================================
 
-  /*
-   * Change career
-   */
-  const handleCareerChange = (careerName) => {
-    setSelectedCareer(careerName);
-
-    // Load suitable starting skills for the selected career.
-    setStudentSkills(careerData[careerName].defaultSkills);
-
-    setShowCareerList(false);
-  };
-
-  /*
-   * Calculate matched and missing skills
-   */
-  const matchedSkills = career.requiredSkills.filter((skill) =>
-    studentSkills.includes(skill)
-  );
-
-  const missingSkills = career.requiredSkills.filter(
-    (skill) => !studentSkills.includes(skill)
-  );
-
-  const skillMatch =
-    career.requiredSkills.length === 0
-      ? 0
-      : Math.round(
-          (matchedSkills.length / career.requiredSkills.length) * 100
+  useEffect(() => {
+    const loadCareers = async () => {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:5000/api/skill-gap-careers"
         );
 
-  /*
-   * Priority based on missing-skill position.
-   */
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          console.error(
+            result.message || "Failed to load careers."
+          );
+          return;
+        }
+
+        const data = {};
+
+        result.careers.forEach((item) => {
+          data[item.job_title] = {
+            icon: getCareerIcon(item.job_title),
+            category: item.category,
+            requiredSkills: item.required_skills,
+          };
+        });
+
+        setCareerData(data);
+
+        const careerNames = Object.keys(data);
+
+        // =====================================================
+        // LOAD PREVIOUSLY SELECTED CAREER
+        // =====================================================
+
+        const savedCareer =
+          localStorage.getItem("skillGapCareer");
+
+        if (
+          savedCareer &&
+          data[savedCareer]
+        ) {
+          setSelectedCareer(savedCareer);
+        } else if (careerNames.length > 0) {
+          setSelectedCareer(careerNames[0]);
+        }
+
+      } catch (error) {
+        console.error(
+          "Failed to load skill gap careers:",
+          error
+        );
+      }
+    };
+
+    loadCareers();
+  }, []);
+
+  // ============================================================
+  // LOAD STUDENT SKILLS FROM CAREER RECOMMENDATION
+  // ============================================================
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem(
+          "careerRecommendationData"
+        ) || "{}"
+      );
+
+      const rawSkills = stored.skills || "";
+
+      let skills = [];
+
+      if (Array.isArray(rawSkills)) {
+        skills = rawSkills;
+      } else {
+        skills = String(rawSkills)
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean);
+      }
+
+      // =====================================================
+      // REMOVE DUPLICATE SKILLS
+      // =====================================================
+
+      const uniqueSkills = [];
+
+      skills.forEach((skill) => {
+        const cleanSkill = String(skill).trim();
+
+        if (
+          cleanSkill &&
+          !uniqueSkills.some(
+            (item) =>
+              item.toLowerCase() ===
+              cleanSkill.toLowerCase()
+          )
+        ) {
+          uniqueSkills.push(cleanSkill);
+        }
+      });
+
+      setStudentSkills(uniqueSkills);
+
+    } catch (error) {
+      console.error(
+        "Failed to load student skills:",
+        error
+      );
+
+      setStudentSkills([]);
+    }
+  }, []);
+
+  // ============================================================
+  // ANALYZE SELECTED CAREER
+  // ============================================================
+
+  useEffect(() => {
+    if (!selectedCareer) {
+      return;
+    }
+
+    const analyzeSkillGap = async () => {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:5000/api/skill-gap-analysis",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              career: selectedCareer,
+              student_skills: studentSkills,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          console.error(
+            result.message ||
+              "Skill gap analysis failed."
+          );
+          return;
+        }
+
+        // =====================================================
+        // GET REQUIRED SKILLS FOR SELECTED ROLE
+        // =====================================================
+
+        const requiredSkills =
+          result.required_skills ||
+          careerData[selectedCareer]?.requiredSkills ||
+          [];
+
+        // =====================================================
+        // DYNAMIC MATCHED / MISSING SKILLS
+        // =====================================================
+
+        const matchedSkills = requiredSkills.filter(
+          (skill) =>
+            studentHasSkill(
+              studentSkills,
+              skill
+            )
+        );
+
+        const missingSkills = requiredSkills.filter(
+          (skill) =>
+            !studentHasSkill(
+              studentSkills,
+              skill
+            )
+        );
+
+        // =====================================================
+        // DYNAMIC SKILL MATCH
+        // =====================================================
+
+        const skillMatch =
+          requiredSkills.length > 0
+            ? Math.round(
+                (matchedSkills.length /
+                  requiredSkills.length) *
+                  100
+              )
+            : 0;
+
+        // =====================================================
+        // JOB READINESS
+        // Based on role-specific required skills
+        // =====================================================
+
+        const jobReadiness = skillMatch;
+
+        // =====================================================
+        // LEARNING PRIORITY
+        // =====================================================
+
+        const priority = {
+          python: 10,
+          java: 10,
+          javascript: 10,
+          html: 10,
+          css: 20,
+          sql: 20,
+          linux: 20,
+          networking: 20,
+          git: 20,
+          oop: 30,
+          "data structures": 30,
+          algorithms: 40,
+          statistics: 30,
+          pandas: 40,
+          numpy: 40,
+          "data analysis": 50,
+          "data visualization": 50,
+          "machine learning": 60,
+          react: 60,
+          "node.js": 60,
+          docker: 70,
+          aws: 70,
+          azure: 70,
+          gcp: 70,
+          "deep learning": 80,
+          tensorflow: 90,
+          pytorch: 90,
+          kubernetes: 100,
+        };
+
+        const learningOrder = [
+          ...missingSkills,
+        ].sort(
+          (a, b) =>
+            (priority[normalizeSkill(a)] || 55) -
+            (priority[normalizeSkill(b)] || 55)
+        );
+
+        // =====================================================
+        // DYNAMIC GAP REPORT
+        // =====================================================
+
+        const gapReportText =
+          missingSkills.length === 0
+            ? `You already have all required skills for ${selectedCareer}.`
+            : `You currently match ${skillMatch}% of the required skills for ${selectedCareer}. You have ${matchedSkills.length} matched skills and ${missingSkills.length} skills to develop.`;
+
+        // =====================================================
+        // FINAL ANALYSIS OBJECT
+        // =====================================================
+
+        const finalAnalysis = {
+          ...result,
+
+          career: selectedCareer,
+
+          required_skills: requiredSkills,
+
+          matched_skills: matchedSkills,
+
+          missing_skills: missingSkills,
+
+          skill_match: skillMatch,
+
+          job_readiness: jobReadiness,
+
+          learning_order: learningOrder,
+
+          gap_report: gapReportText,
+
+          your_skills: studentSkills,
+        };
+
+        setAnalysis(finalAnalysis);
+
+        // =====================================================
+        // SAVE FOR PROFILE PAGE
+        // =====================================================
+
+        localStorage.setItem(
+          "skillGapAnalysisData",
+          JSON.stringify(finalAnalysis)
+        );
+
+        localStorage.setItem(
+          "skillGapCareer",
+          selectedCareer
+        );
+
+      } catch (error) {
+        console.error(
+          "Skill gap analysis error:",
+          error
+        );
+      }
+    };
+
+    analyzeSkillGap();
+  }, [
+    selectedCareer,
+    studentSkills,
+    careerData,
+  ]);
+
+  // ============================================================
+  // CURRENT CAREER
+  // ============================================================
+
+  const career =
+    careerData[selectedCareer] || {
+      icon: "💻",
+      category:
+        analysis?.category || "",
+      requiredSkills:
+        analysis?.required_skills || [],
+    };
+
+  // ============================================================
+  // CHANGE CAREER
+  // ============================================================
+
+  const handleCareerChange = (careerName) => {
+    setSelectedCareer(careerName);
+    setAnalysis(null);
+    setShowCareerList(false);
+
+    localStorage.setItem(
+      "skillGapCareer",
+      careerName
+    );
+  };
+
+  // ============================================================
+  // DYNAMIC MATCHED / MISSING SKILLS
+  // ============================================================
+
+  const matchedSkills =
+    analysis?.matched_skills || [];
+
+  const missingSkills =
+    analysis?.missing_skills || [];
+
+  const skillMatch =
+    analysis?.skill_match ?? 0;
+
+  // ============================================================
+  // PRIORITY
+  // ============================================================
+
   const getPriority = (index) => {
     if (index === 0) return "HIGH";
     if (index <= 2) return "MEDIUM";
@@ -141,35 +482,49 @@ function SkillGap() {
     return "low";
   };
 
-  /*
-   * Generate gap report dynamically
-   */
+  // ============================================================
+  // DYNAMIC AI GAP REPORT
+  // ============================================================
+
   const gapReport = useMemo(() => {
-    return missingSkills.map((skill, index) => ({
-      name: skill,
-      priority: getPriority(index),
-      priorityClass: getPriorityClass(index),
-      progress:
-        getPriority(index) === "HIGH"
-          ? 82
-          : getPriority(index) === "MEDIUM"
-          ? 62
-          : 40,
-    }));
-  }, [missingSkills]);
+    const learningOrder =
+      analysis?.learning_order ||
+      missingSkills;
 
-  /*
-   * Generate learning steps dynamically
-   */
-  const learningSteps = missingSkills.slice(0, 4);
+    return learningOrder.map(
+      (skill, index) => ({
+        name: skill,
+        priority: getPriority(index),
+        priorityClass:
+          getPriorityClass(index),
+        progress:
+          getPriority(index) === "HIGH"
+            ? 82
+            : getPriority(index) === "MEDIUM"
+            ? 62
+            : 40,
+      })
+    );
+  }, [analysis, missingSkills]);
 
-  /*
-   * Calculate job readiness
-   */
-  const calculatedReadiness = Math.min(
-    100,
-    Math.round((skillMatch + career.jobReadiness) / 2)
-  );
+  // ============================================================
+  // DYNAMIC LEARNING ORDER
+  // ============================================================
+
+  const learningSteps =
+    analysis?.learning_order ||
+    missingSkills;
+
+  // ============================================================
+  // DYNAMIC JOB READINESS
+  // ============================================================
+
+  const calculatedReadiness =
+    analysis?.job_readiness ?? 0;
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <div className="skill-gap-page">
@@ -180,7 +535,10 @@ function SkillGap() {
 
       <aside className="skill-gap-sidebar">
 
-        <Link to="/dashboard" className="skill-gap-brand">
+        <Link
+          to="/dashboard"
+          className="skill-gap-brand"
+        >
           <div className="skill-gap-brand-icon">
             ✦
           </div>
@@ -308,7 +666,7 @@ function SkillGap() {
               </span>
 
               <h2>
-                {selectedCareer}
+                {selectedCareer || "Loading..."}
               </h2>
 
               <p>
@@ -418,7 +776,9 @@ function SkillGap() {
 
             <div>
               <span>Job Readiness</span>
-              <strong>{calculatedReadiness}%</strong>
+              <strong>
+                {calculatedReadiness}%
+              </strong>
             </div>
 
             <div className="summary-small">
@@ -448,6 +808,7 @@ function SkillGap() {
 
               <div>
                 <h2>Your Skills</h2>
+
                 <p>
                   Skills currently available
                 </p>
@@ -458,23 +819,34 @@ function SkillGap() {
 
             <div className="skill-list">
 
-              {studentSkills.map(
-                (skill, index) => (
-                  <div
-                    className="skill-list-item matched-item"
-                    key={index}
-                  >
+              {studentSkills.length === 0 ? (
 
-                    <span className="skill-check">
-                      ✓
-                    </span>
+                <div className="no-gap-message">
+                  No student skills found. Please enter
+                  skills in Career Recommendation.
+                </div>
 
-                    <span>
-                      {skill}
-                    </span>
+              ) : (
 
-                  </div>
+                studentSkills.map(
+                  (skill, index) => (
+                    <div
+                      className="skill-list-item matched-item"
+                      key={index}
+                    >
+
+                      <span className="skill-check">
+                        ✓
+                      </span>
+
+                      <span>
+                        {skill}
+                      </span>
+
+                    </div>
+                  )
                 )
+
               )}
 
             </div>
@@ -493,6 +865,7 @@ function SkillGap() {
               </div>
 
               <div>
+
                 <h2>
                   Required Skills
                 </h2>
@@ -500,6 +873,7 @@ function SkillGap() {
                 <p>
                   Skills needed for {selectedCareer}
                 </p>
+
               </div>
 
             </div>
@@ -507,11 +881,23 @@ function SkillGap() {
 
             <div className="skill-list">
 
-              {career.requiredSkills.map(
+              {(
+                analysis?.required_skills ||
+                career.requiredSkills ||
+                []
+              ).map(
                 (skill, index) => {
 
                   const isMatched =
-                    studentSkills.includes(skill);
+                    matchedSkills.some(
+                      (matched) =>
+                        normalizeSkill(
+                          matched
+                        ) ===
+                        normalizeSkill(
+                          skill
+                        )
+                    );
 
                   return (
                     <div
@@ -530,7 +916,9 @@ function SkillGap() {
                             : "skill-warning"
                         }
                       >
-                        {isMatched ? "✓" : "!"}
+                        {isMatched
+                          ? "✓"
+                          : "!"}
                       </span>
 
                       <span>
@@ -576,6 +964,7 @@ function SkillGap() {
               </div>
 
               <div>
+
                 <h2>
                   AI Skill Gap Report
                 </h2>
@@ -584,6 +973,7 @@ function SkillGap() {
                   Priority analysis of the skills you need
                   to improve.
                 </p>
+
               </div>
 
             </div>
@@ -668,6 +1058,7 @@ function SkillGap() {
               </div>
 
               <div>
+
                 <h2>
                   What To Learn
                 </h2>
@@ -675,6 +1066,7 @@ function SkillGap() {
                 <p>
                   Focus on these skills to close your gap.
                 </p>
+
               </div>
 
             </div>
@@ -738,6 +1130,7 @@ function SkillGap() {
               </div>
 
               <div>
+
                 <h2>
                   Next Steps
                 </h2>
@@ -745,6 +1138,7 @@ function SkillGap() {
                 <p>
                   Your recommended career improvement path.
                 </p>
+
               </div>
 
             </div>
@@ -871,10 +1265,210 @@ function SkillGap() {
 
           <button
             className="reanalyze-button"
-            onClick={() => {
-              alert(
-                `Skill analysis updated for ${selectedCareer}`
-              );
+            onClick={async () => {
+
+              if (!selectedCareer) {
+                alert(
+                  "Please select a target career."
+                );
+                return;
+              }
+
+              try {
+
+                setAnalysis(null);
+
+                const response = await fetch(
+                  "http://127.0.0.1:5000/api/skill-gap-analysis",
+                  {
+                    method: "POST",
+
+                    headers: {
+                      "Content-Type":
+                        "application/json",
+                    },
+
+                    body: JSON.stringify({
+                      career: selectedCareer,
+                      student_skills:
+                        studentSkills,
+                    }),
+                  }
+                );
+
+                const result =
+                  await response.json();
+
+                if (
+                  !response.ok ||
+                  !result.success
+                ) {
+                  alert(
+                    result.message ||
+                      "Skill analysis failed."
+                  );
+                  return;
+                }
+
+                // =================================================
+                // DYNAMIC REQUIRED SKILLS
+                // =================================================
+
+                const requiredSkills =
+                  result.required_skills ||
+                  careerData[
+                    selectedCareer
+                  ]?.requiredSkills ||
+                  [];
+
+                // =================================================
+                // DYNAMIC MATCHING
+                // =================================================
+
+                const matchedSkills =
+                  requiredSkills.filter(
+                    (skill) =>
+                      studentHasSkill(
+                        studentSkills,
+                        skill
+                      )
+                  );
+
+                const missingSkills =
+                  requiredSkills.filter(
+                    (skill) =>
+                      !studentHasSkill(
+                        studentSkills,
+                        skill
+                      )
+                  );
+
+                // =================================================
+                // DYNAMIC MATCH %
+                // =================================================
+
+                const skillMatch =
+                  requiredSkills.length > 0
+                    ? Math.round(
+                        (matchedSkills.length /
+                          requiredSkills.length) *
+                          100
+                      )
+                    : 0;
+
+                // =================================================
+                // DYNAMIC JOB READINESS
+                // =================================================
+
+                const jobReadiness =
+                  skillMatch;
+
+                // =================================================
+                // LEARNING PRIORITY
+                // =================================================
+
+                const priority = {
+                  python: 10,
+                  java: 10,
+                  javascript: 10,
+                  html: 10,
+                  css: 20,
+                  sql: 20,
+                  linux: 20,
+                  networking: 20,
+                  git: 20,
+                  oop: 30,
+                  "data structures": 30,
+                  algorithms: 40,
+                  statistics: 30,
+                  pandas: 40,
+                  numpy: 40,
+                  "data analysis": 50,
+                  "data visualization": 50,
+                  "machine learning": 60,
+                  react: 60,
+                  "node.js": 60,
+                  docker: 70,
+                  aws: 70,
+                  azure: 70,
+                  gcp: 70,
+                  "deep learning": 80,
+                  tensorflow: 90,
+                  pytorch: 90,
+                  kubernetes: 100,
+                };
+
+                const learningOrder =
+                  [...missingSkills].sort(
+                    (a, b) =>
+                      (priority[
+                        normalizeSkill(a)
+                      ] || 55) -
+                      (priority[
+                        normalizeSkill(b)
+                      ] || 55)
+                  );
+
+                const finalAnalysis = {
+                  ...result,
+
+                  career: selectedCareer,
+
+                  required_skills:
+                    requiredSkills,
+
+                  matched_skills:
+                    matchedSkills,
+
+                  missing_skills:
+                    missingSkills,
+
+                  skill_match:
+                    skillMatch,
+
+                  job_readiness:
+                    jobReadiness,
+
+                  learning_order:
+                    learningOrder,
+
+                  your_skills:
+                    studentSkills,
+                };
+
+                setAnalysis(
+                  finalAnalysis
+                );
+
+                // =================================================
+                // SAVE RESULT FOR PROFILE
+                // =================================================
+
+                localStorage.setItem(
+                  "skillGapAnalysisData",
+                  JSON.stringify(
+                    finalAnalysis
+                  )
+                );
+
+                localStorage.setItem(
+                  "skillGapCareer",
+                  selectedCareer
+                );
+
+              } catch (error) {
+
+                console.error(
+                  "Skill analysis error:",
+                  error
+                );
+
+                alert(
+                  "Unable to connect to the backend."
+                );
+
+              }
+
             }}
           >
             🔄 Update My Skills & Re-analyze

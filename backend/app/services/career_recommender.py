@@ -60,8 +60,8 @@ def extract_experience(text):
     text = str(text).lower()
 
     patterns = [
-        r'(\d+(?:\.\d+)?)\s*\+?\s*years?',
-        r'(\d+(?:\.\d+)?)\s*\+?\s*yrs?'
+        r"(\d+(?:\.\d+)?)\s*\+?\s*years?",
+        r"(\d+(?:\.\d+)?)\s*\+?\s*yrs?"
     ]
 
     for pattern in patterns:
@@ -69,12 +69,25 @@ def extract_experience(text):
         match = re.search(pattern, text)
 
         if match:
+
             try:
                 return float(match.group(1))
             except ValueError:
-                return 0
+                return 0.0
 
-    return 0
+    if "fresher" in text:
+        return 0.0
+
+    if "less than 1 year" in text:
+        return 0.5
+
+    if "1-2 years" in text:
+        return 1.5
+
+    if "2+ years" in text:
+        return 2.0
+
+    return 0.0
 
 
 # ============================================================
@@ -122,7 +135,6 @@ def calculate_education_score(
         education_requirement
     ).lower()
 
-    # More specific education matching
     education_groups = {
 
         "btech": [
@@ -188,7 +200,6 @@ def calculate_education_score(
     if not student_education:
         return 0.5
 
-    # Direct education match
     for education in student_education:
 
         keywords = education_groups[education]
@@ -196,10 +207,8 @@ def calculate_education_score(
         for keyword in keywords:
 
             if keyword in education_requirement:
-
                 return 1.0
 
-    # Bachelor level compatibility
     bachelor_education = [
         "btech",
         "be",
@@ -216,7 +225,6 @@ def calculate_education_score(
     ):
         return 1.0
 
-    # Master level compatibility
     master_education = [
         "mtech",
         "mca",
@@ -282,12 +290,9 @@ def calculate_interest_score(
 ):
 
     student_text = str(student_text).lower()
-
     job_title = str(job_title).lower()
-
     category = str(category).lower()
 
-    # Interest / career keywords
     interest_groups = {
 
         "artificial intelligence": [
@@ -320,7 +325,9 @@ def calculate_interest_score(
             "frontend",
             "backend",
             "full stack",
-            "fullstack"
+            "fullstack",
+            "react",
+            "javascript"
         ],
 
         "cloud": [
@@ -363,8 +370,8 @@ def calculate_interest_score(
             total_interest_groups += 1
 
             job_has_interest = any(
-                keyword in job_title or
-                keyword in category
+                keyword in job_title
+                or keyword in category
                 for keyword in keywords
             )
 
@@ -383,71 +390,123 @@ def calculate_interest_score(
 # ============================================================
 # WORKPLACE
 # ============================================================
+def get_workplace(job_title):
+    title = str(job_title).lower()
 
-def get_workplace(
-    job_title,
-    category
-):
+    if "ai/ml" in title or "ai / ml" in title:
+        return "AI Models / Automation / Research"
 
-    job_title = str(job_title).lower()
-    category = str(category).lower()
+    if "artificial intelligence" in title:
+        return "AI Models / Automation / Research"
 
-    if (
-        "cloud" in job_title
-        or "devops" in job_title
-        or "cloud" in category
-        or "devops" in category
-    ):
+    if "machine learning" in title or "ml engineer" in title:
+        return "Machine Learning / AI Applications / Research"
 
-        return "Cloud / IT Companies / Remote"
+    if "data scientist" in title:
+        return "Data Analysis / Prediction / Research"
 
-    if (
-        "data scientist" in job_title
-        or "data analyst" in job_title
-        or "machine learning" in job_title
-        or "ml engineer" in job_title
-        or "artificial intelligence" in job_title
-        or "data" in category
-        or "ai" in category
-    ):
+    if "data analyst" in title:
+        return "Data Analysis / Visualization / Reporting"
 
-        return "Data / AI Companies / Research / Remote"
+    if "data engineer" in title:
+        return "Data Pipelines / ETL / Data Platforms"
 
-    if (
-        "frontend" in job_title
-        or "backend" in job_title
-        or "full stack" in job_title
-        or "web" in job_title
-        or "web" in category
-    ):
+    if "full stack" in title or "fullstack" in title:
+        return "Web Applications / Frontend / Backend"
 
-        return "Software / Web Companies / Remote"
+    if "frontend" in title:
+        return "Web UI / Frontend Development"
 
-    if (
-        "software" in job_title
-        or "developer" in job_title
-        or "programmer" in job_title
-        or "software" in category
-    ):
+    if "backend" in title:
+        return "APIs / Backend Systems / Databases"
 
-        return "IT / Software Companies / Hybrid"
+    if "cloud" in title:
+        return "Cloud Infrastructure / Deployment"
 
-    if (
-        "security" in job_title
-        or "cyber" in job_title
-        or "cyber" in category
-    ):
+    if "devops" in title:
+        return "CI/CD / Cloud / Infrastructure"
 
-        return "Cybersecurity / IT Companies / Security Operations"
+    if "cybersecurity" in title or "cyber security" in title:
+        return "Cybersecurity / Security Operations"
 
-    if (
-        "database" in job_title
-        or "database" in category
-    ):
+    if "security" in title:
+        return "Security Operations / IT Security"
 
-        return "IT / Database Systems / Cloud"
+    if "database" in title or "dba" in title:
+        return "Database Systems / Administration"
 
-    return "IT / Corporate / Hybrid"
+    if "mobile" in title or "android" in title or "ios" in title:
+        return "Mobile Application Development"
+
+    if "testing" in title or "tester" in title or "quality assurance" in title:
+        return "Software Testing / Quality Assurance"
+
+    if "software" in title or "developer" in title:
+        return "Software Development / Applications"
+
+    return "IT / Technology"
+ # ============================================================
+# ROLE-SPECIFIC WORK AREA
+# ============================================================
+# ============================================================
+# ROLE-SPECIFIC CATEGORY
+# ============================================================
+
+def get_role_category(job_title, original_category):
+    title = str(job_title).lower()
+
+    if "ai/ml" in title or "ai / ml" in title:
+        return "AI & Machine Learning"
+
+    if "artificial intelligence" in title:
+        return "AI & Machine Learning"
+
+    if "machine learning" in title or "ml engineer" in title:
+        return "AI & Machine Learning"
+
+    if "data scientist" in title:
+        return "Data & Analytics"
+
+    if "data analyst" in title:
+        return "Data & Analytics"
+
+    if "data engineer" in title:
+        return "Data Engineering"
+
+    if "full stack" in title or "fullstack" in title:
+        return "Web Development"
+
+    if "frontend" in title:
+        return "Frontend Development"
+
+    if "backend" in title:
+        return "Backend Development"
+
+    if "cloud" in title:
+        return "Cloud & Infrastructure"
+
+    if "devops" in title:
+        return "DevOps & Infrastructure"
+
+    if "cybersecurity" in title or "cyber security" in title:
+        return "Cybersecurity"
+
+    if "security" in title:
+        return "Cybersecurity"
+
+    if "database" in title or "dba" in title:
+        return "Database & Systems"
+
+    if "mobile" in title or "android" in title or "ios" in title:
+        return "Mobile Development"
+
+    if "testing" in title or "tester" in title or "quality assurance" in title:
+        return "Software Testing"
+
+    if "software" in title or "developer" in title:
+        return "Software Development"
+
+    return original_category
 
 
 # ============================================================
@@ -465,33 +524,25 @@ def recommend_careers(
     ):
         return []
 
-    # --------------------------------------------------------
-    # LOAD DATASET
-    # --------------------------------------------------------
-
+    # Load dataset
     job_roles = load_job_roles()
 
-    # --------------------------------------------------------
-    # PREPARE JOB TEXT
-    # --------------------------------------------------------
-
+    # Prepare job text
     job_roles["combined_text"] = job_roles.apply(
         prepare_job_text,
         axis=1
     )
 
-    # --------------------------------------------------------
-    # STUDENT INPUT
-    # --------------------------------------------------------
-
+    # Student input
     student_text = str(resume_text)
-    print("===== CAREER INPUT RECEIVED =====")
-    print(student_text)
-    print("=================================")
 
-    # --------------------------------------------------------
-    # TF-IDF
-    # --------------------------------------------------------
+    print("\n===== CAREER INPUT RECEIVED =====")
+    print(student_text)
+    print("=================================\n")
+
+    # ========================================================
+    # TF-IDF SIMILARITY
+    # ========================================================
 
     vectorizer = TfidfVectorizer(
         lowercase=True,
@@ -508,7 +559,6 @@ def recommend_careers(
     )
 
     student_vector = tfidf_matrix[0]
-
     job_vectors = tfidf_matrix[1:]
 
     similarity_scores = cosine_similarity(
@@ -516,21 +566,19 @@ def recommend_careers(
         job_vectors
     ).flatten()
 
-    job_roles["Text Similarity"] = (
-        similarity_scores
-    )
+    job_roles["Text Similarity"] = similarity_scores
 
-    # --------------------------------------------------------
+    # ========================================================
     # EXPERIENCE
-    # --------------------------------------------------------
+    # ========================================================
 
     student_experience = extract_experience(
         student_text
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # FINAL SCORE
-    # --------------------------------------------------------
+    # ========================================================
 
     final_scores = []
 
@@ -540,65 +588,47 @@ def recommend_careers(
             row["Text Similarity"]
         )
 
-        education_score = (
-            calculate_education_score(
-                student_text,
-                row["Education Requirement"]
-            )
+        education_score = calculate_education_score(
+            student_text,
+            row["Education Requirement"]
         )
 
-        skill_score = (
-            calculate_skill_score(
-                student_text,
-                row["Required Skills"]
-            )
+        skill_score = calculate_skill_score(
+            student_text,
+            row["Required Skills"]
         )
 
-        interest_score = (
-            calculate_interest_score(
-                student_text,
-                row["Job Title"],
-                row["Category"]
-            )
+        interest_score = calculate_interest_score(
+            student_text,
+            row["Job Title"],
+            row["Category"]
         )
 
-        experience_score = (
-            calculate_experience_score(
-                student_experience,
-                row["Experience Years"]
-            )
+        experience_score = calculate_experience_score(
+            student_experience,
+            row["Experience Years"]
         )
 
-        # ----------------------------------------------------
+        # ====================================================
         # WEIGHTED SCORE
-        # ----------------------------------------------------
+        # ====================================================
 
         final_score = (
-
             (skill_score * 0.40)
-
             + (interest_score * 0.25)
-
             + (text_score * 0.20)
-
             + (education_score * 0.10)
-
             + (experience_score * 0.05)
         )
 
-        final_scores.append(
-            final_score
-        )
+        final_scores.append(final_score)
 
-    # --------------------------------------------------------
-    # STORE FINAL SCORE
-    # --------------------------------------------------------
-
+    # Store scores
     job_roles["Final Score"] = final_scores
 
-    # --------------------------------------------------------
-    # SORT DYNAMICALLY
-    # --------------------------------------------------------
+    # ========================================================
+    # DYNAMIC SORTING
+    # ========================================================
 
     recommendations = (
         job_roles
@@ -609,29 +639,22 @@ def recommend_careers(
         .head(top_n)
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # CREATE RESULT
-    # --------------------------------------------------------
+    # ========================================================
 
     results = []
 
     for _, row in recommendations.iterrows():
 
-        score = (
-            float(row["Final Score"])
-            * 100
-        )
+        score = float(
+            row["Final Score"]
+        ) * 100
 
         score = max(
             0,
             min(100, score)
         )
-
-        # IMPORTANT:
-        # Required Skills are kept in backend
-        # for Skill Gap Analysis.
-        # They are NOT intended as Career
-        # Recommendation display fields.
 
         required_skills = [
             skill.strip()
@@ -642,8 +665,7 @@ def recommend_careers(
         ]
 
         workplace = get_workplace(
-            row["Job Title"],
-            row["Category"]
+            row["Job Title"]
         )
 
         results.append({
@@ -652,7 +674,10 @@ def recommend_careers(
                 row["Job Title"],
 
             "category":
-                row["Category"],
+    get_role_category(
+        row["Job Title"],
+        row["Category"]
+    ),
 
             "similarity_score":
                 round(score, 2),
@@ -666,5 +691,17 @@ def recommend_careers(
             "salary_range":
                 row["Salary Range"]
         })
+
+    print("===== CAREER RECOMMENDATIONS =====")
+
+    for index, result in enumerate(results, start=1):
+
+        print(
+            f"{index}. "
+            f"{result['job_title']} - "
+            f"{result['similarity_score']}%"
+        )
+
+    print("==================================\n")
 
     return results

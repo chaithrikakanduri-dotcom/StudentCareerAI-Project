@@ -23,23 +23,20 @@ function Profile() {
     degree: loggedStudent?.education || "B.Tech",
     branch: "CSE - AIML",
     year: "3rd Year",
-    cgpa: "8.5",
-    careerGoal: "AI/ML Engineer",
+    cgpa: "",
+    careerGoal: "",
+    careerMatch: 0,
+    placementChance: 0,
+    skillMatch: 0,
+    jobReadiness: 0,
   });
 
-  const [skills, setSkills] = useState([
-    "Python",
-    "SQL",
-    "Machine Learning",
-    "Flask",
-    "React",
-    "Java",
-  ]);
+  const [skills, setSkills] = useState([]);
 
   const [newSkill, setNewSkill] = useState("");
 
   // ============================================================
-  // LOAD PROFILE FROM BACKEND
+  // LOAD ALL AI RESULTS
   // ============================================================
 
   useEffect(() => {
@@ -62,15 +59,209 @@ function Profile() {
         return;
       }
 
-      // Show session data immediately
+      // ========================================================
+      // CAREER RECOMMENDATION DATA
+      // ========================================================
+
+      let careerRecommendation = {};
+
+      try {
+        careerRecommendation = JSON.parse(
+          localStorage.getItem("careerRecommendationData") || "{}"
+        );
+      } catch (error) {
+        console.error(
+          "Career recommendation data error:",
+          error
+        );
+      }
+
+      // Degree from Career Recommendation
+      const careerEducation =
+        careerRecommendation.education ||
+        student.education ||
+        "B.Tech";
+
+      // Skills from Career Recommendation
+      const rawSkills =
+        careerRecommendation.skills || "";
+
+      const careerSkills = Array.isArray(rawSkills)
+        ? rawSkills
+            .map((skill) => String(skill).trim())
+            .filter(Boolean)
+        : String(rawSkills)
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter(Boolean);
+
+      setSkills(careerSkills);
+
+      // ========================================================
+      // PLACEMENT PREDICTION DATA
+      // ========================================================
+
+      let placementData = {};
+
+      try {
+        placementData = JSON.parse(
+          localStorage.getItem("placementPredictionData") || "{}"
+        );
+      } catch (error) {
+        console.error(
+          "Placement prediction data error:",
+          error
+        );
+      }
+
+      const cgpa =
+        placementData.CGPA ||
+        placementData.cgpa ||
+        "";
+
+      const placementChance = Number(
+        placementData.placement_probability ??
+          placementData.placementProbability ??
+          0
+      );
+
+      // ========================================================
+      // SKILL GAP DATA
+      // ========================================================
+
+      let skillGapData = {};
+
+      try {
+        skillGapData = JSON.parse(
+          localStorage.getItem("skillGapAnalysisData") || "{}"
+        );
+      } catch (error) {
+        console.error(
+          "Skill gap data error:",
+          error
+        );
+      }
+
+      const savedSkillGapCareer =
+        localStorage.getItem("skillGapCareer") || "";
+
+      const careerGoal =
+        skillGapData.career ||
+        savedSkillGapCareer ||
+        "";
+
+      const skillMatch = Number(
+        skillGapData.skill_match ??
+          skillGapData.skillMatch ??
+          0
+      );
+
+      const jobReadiness = Number(
+        skillGapData.job_readiness ??
+          skillGapData.jobReadiness ??
+          skillMatch ??
+          0
+      );
+
+      // ========================================================
+      // CAREER MATCH FROM CAREER RECOMMENDATION
+      // ========================================================
+
+      let careerMatch = 0;
+
+      // IMPORTANT:
+      // Your Career Recommendation data uses
+      // "careerRecommendations"
+      // and each result uses "similarity_score".
+
+      const recommendations =
+        careerRecommendation.careerRecommendations ||
+        careerRecommendation.career_recommendations ||
+        careerRecommendation.recommendations ||
+        [];
+
+      if (Array.isArray(recommendations)) {
+        // First try to find the selected Skill Gap career
+        const selectedRecommendation =
+          recommendations.find((item) => {
+            const recommendationName =
+              item.job_title ||
+              item.jobTitle ||
+              item.career ||
+              item.role ||
+              item.title ||
+              "";
+
+            return (
+              String(recommendationName)
+                .trim()
+                .toLowerCase() ===
+              String(careerGoal)
+                .trim()
+                .toLowerCase()
+            );
+          });
+
+        // Use selected career if available.
+        // Otherwise use the first/top recommendation.
+        const careerResult =
+          selectedRecommendation ||
+          recommendations[0];
+
+        if (careerResult) {
+          careerMatch = Number(
+            careerResult.similarity_score ??
+              careerResult.match_percentage ??
+              careerResult.matchPercentage ??
+              careerResult.match_percent ??
+              careerResult.matchPercent ??
+              careerResult.match ??
+              careerResult.score ??
+              0
+          );
+        }
+      }
+
+      // ========================================================
+      // SHOW SESSION DATA IMMEDIATELY
+      // ========================================================
+
       setProfile((prev) => ({
         ...prev,
-        name: student.name || prev.name,
-        email: student.email || prev.email,
-        degree: student.education || prev.degree,
+
+        name:
+          student.name ||
+          prev.name,
+
+        email:
+          student.email ||
+          prev.email,
+
+        degree:
+          careerEducation ||
+          prev.degree,
+
+        cgpa:
+          cgpa ||
+          prev.cgpa,
+
+        careerGoal:
+          careerGoal ||
+          prev.careerGoal,
+
+        careerMatch,
+
+        placementChance,
+
+        skillMatch,
+
+        jobReadiness,
       }));
 
-      // Refresh data from MySQL
+      // ========================================================
+      // REFRESH STUDENT DATA FROM MYSQL
+      // ========================================================
+
       if (!student.email) {
         return;
       }
@@ -83,21 +274,37 @@ function Profile() {
         );
 
         if (!response.ok) {
-          throw new Error("Profile request failed.");
+          throw new Error(
+            "Profile request failed."
+          );
         }
 
         const data = await response.json();
 
-        console.log("Profile API response:", data);
+        console.log(
+          "Profile API response:",
+          data
+        );
 
         if (data.success && data.student) {
-          const latestStudent = data.student;
+          const latestStudent =
+            data.student;
 
           setProfile((prev) => ({
             ...prev,
-            name: latestStudent.name || prev.name,
-            email: latestStudent.email || prev.email,
-            degree: latestStudent.education || prev.degree,
+
+            name:
+              latestStudent.name ||
+              prev.name,
+
+            email:
+              latestStudent.email ||
+              prev.email,
+
+            degree:
+              careerEducation ||
+              latestStudent.education ||
+              prev.degree,
           }));
 
           sessionStorage.setItem(
@@ -106,8 +313,12 @@ function Profile() {
           );
         }
       } catch (error) {
-        console.error("Profile API error:", error);
-        // Session data is already displayed, so don't block the page.
+        console.error(
+          "Profile API error:",
+          error
+        );
+
+        // Local AI results remain available.
       }
     };
 
@@ -130,11 +341,13 @@ function Profile() {
   // ============================================================
 
   const handleSaveProfile = () => {
-    const studentData = sessionStorage.getItem("student");
+    const studentData =
+      sessionStorage.getItem("student");
 
     if (studentData) {
       try {
-        const student = JSON.parse(studentData);
+        const student =
+          JSON.parse(studentData);
 
         const updatedStudent = {
           ...student,
@@ -148,12 +361,18 @@ function Profile() {
           JSON.stringify(updatedStudent)
         );
       } catch (error) {
-        console.error("Session update error:", error);
+        console.error(
+          "Session update error:",
+          error
+        );
       }
     }
 
     setIsEditing(false);
-    alert("Profile updated successfully!");
+
+    alert(
+      "Profile updated successfully!"
+    );
   };
 
   // ============================================================
@@ -163,8 +382,19 @@ function Profile() {
   const handleAddSkill = () => {
     const skill = newSkill.trim();
 
-    if (skill !== "" && !skills.includes(skill)) {
-      setSkills([...skills, skill]);
+    if (
+      skill !== "" &&
+      !skills.some(
+        (existingSkill) =>
+          existingSkill.toLowerCase() ===
+          skill.toLowerCase()
+      )
+    ) {
+      setSkills([
+        ...skills,
+        skill,
+      ]);
+
       setNewSkill("");
     }
   };
@@ -173,9 +403,14 @@ function Profile() {
   // REMOVE SKILL
   // ============================================================
 
-  const handleRemoveSkill = (skillToRemove) => {
+  const handleRemoveSkill = (
+    skillToRemove
+  ) => {
     setSkills(
-      skills.filter((skill) => skill !== skillToRemove)
+      skills.filter(
+        (skill) =>
+          skill !== skillToRemove
+      )
     );
   };
 
@@ -184,7 +419,10 @@ function Profile() {
   // ============================================================
 
   const handleLogout = () => {
-    sessionStorage.removeItem("student");
+    sessionStorage.removeItem(
+      "student"
+    );
+
     navigate("/");
   };
 
@@ -511,7 +749,7 @@ function Profile() {
 
               <div className="profile-detail-row">
                 <span>CGPA</span>
-                <strong>{profile.cgpa}</strong>
+                <strong>{profile.cgpa || "Not available"}</strong>
               </div>
 
             </div>
@@ -545,7 +783,8 @@ function Profile() {
               </span>
 
               <h3>
-                {profile.careerGoal}
+                {profile.careerGoal ||
+                  "Complete Skill Gap Analysis"}
               </h3>
 
               <div className="career-progress">
@@ -556,7 +795,7 @@ function Profile() {
                   </span>
 
                   <strong>
-                    92%
+                    {profile.careerMatch}%
                   </strong>
                 </div>
 
@@ -564,7 +803,15 @@ function Profile() {
 
                   <div
                     className="career-progress-fill"
-                    style={{ width: "92%" }}
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          profile.careerMatch
+                        )
+                      )}%`,
+                    }}
                   ></div>
 
                 </div>
@@ -574,7 +821,7 @@ function Profile() {
               <div className="career-ready">
                 🚀 Job Readiness
                 <strong>
-                  72%
+                  {profile.jobReadiness}%
                 </strong>
               </div>
 
@@ -695,7 +942,7 @@ function Profile() {
               </span>
 
               <strong>
-                85%
+                {profile.placementChance}%
               </strong>
             </div>
 
@@ -713,7 +960,7 @@ function Profile() {
               </span>
 
               <strong>
-                92%
+                {profile.careerMatch}%
               </strong>
             </div>
 
@@ -731,7 +978,7 @@ function Profile() {
               </span>
 
               <strong>
-                68%
+                {profile.skillMatch}%
               </strong>
             </div>
 
@@ -756,14 +1003,15 @@ function Profile() {
             </span>
 
             <h2>
-              Keep improving your technical skills!
+              {profile.skillMatch >= 80
+                ? "Your profile has a strong skill match!"
+                : "Keep improving your technical skills!"}
             </h2>
 
             <p>
-              Your profile shows a strong foundation.
-              Continue building projects and improving
-              your missing skills to increase your career
-              readiness.
+              {profile.skillMatch >= 80
+                ? `Your current skills match ${profile.skillMatch}% of the required skills for your target career. Continue developing advanced skills to stay career-ready.`
+                : `Your profile currently matches ${profile.skillMatch}% of the required skills for your target career. Continue building projects and improving your missing skills to increase your career readiness.`}
             </p>
 
           </div>

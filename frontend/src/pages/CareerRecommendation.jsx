@@ -8,15 +8,39 @@ function CareerRecommendation() {
   const [experience, setExperience] = useState("");
   const [skills, setSkills] = useState("");
   const [interests, setInterests] = useState("");
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:5000/api/career-recommendation",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          education,
+          experience,
+          skills,
+          interests,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      alert(result.message || "Failed to get career recommendations.");
+      return;
+    }
 
     const data = {
       education,
       experience,
       skills,
       interests,
+      careerRecommendations: result.career_recommendations,
     };
 
     localStorage.setItem(
@@ -27,7 +51,11 @@ function CareerRecommendation() {
     navigate("/career-recommendation-result", {
       state: data,
     });
-  };
+  } catch (error) {
+    console.error("Career recommendation error:", error);
+    alert("Unable to connect to the backend.");
+  }
+};
 
   const logout = () => {
     localStorage.clear();

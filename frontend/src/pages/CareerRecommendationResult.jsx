@@ -7,54 +7,25 @@ function CareerRecommendationResult() {
   const data = JSON.parse(
     localStorage.getItem("careerRecommendationData") || "{}"
   );
-
-  const roles = [
-    {
-      rank: "01",
-      icon: "🤖",
-      role: "AI/ML Engineer",
-      match: 92,
-      category: "AI & Machine Learning",
-      workArea: "AI Models & Automation",
-      salary: "₹6–18 LPA",
-    },
-    {
-      rank: "02",
-      icon: "📊",
-      role: "Data Scientist",
-      match: 86,
-      category: "Data & Analytics",
-      workArea: "Data Analysis & Prediction",
-      salary: "₹5–16 LPA",
-    },
-    {
-      rank: "03",
-      icon: "💻",
-      role: "Software Developer",
-      match: 81,
-      category: "Software Development",
-      workArea: "Applications & Software",
-      salary: "₹4–12 LPA",
-    },
-    {
-      rank: "04",
-      icon: "🌐",
-      role: "Full Stack Developer",
-      match: 77,
-      category: "Web Development",
-      workArea: "Web Applications",
-      salary: "₹4–12 LPA",
-    },
-    {
-      rank: "05",
-      icon: "☁️",
-      role: "Cloud Engineer",
-      match: 72,
-      category: "Cloud & Infrastructure",
-      workArea: "Cloud Systems & Deployment",
-      salary: "₹5–15 LPA",
-    },
-  ];
+const roles = (data.careerRecommendations || []).map((item, index) => ({
+  rank: String(index + 1).padStart(2, "0"),
+  icon:
+    item.job_title?.toLowerCase().includes("ai") ||
+    item.job_title?.toLowerCase().includes("machine")
+      ? "🤖"
+      : item.job_title?.toLowerCase().includes("data")
+      ? "📊"
+      : item.job_title?.toLowerCase().includes("cloud")
+      ? "☁️"
+      : item.job_title?.toLowerCase().includes("web")
+      ? "🌐"
+      : "💻",
+  role: item.job_title,
+  match: item.similarity_score,
+  category: item.category,
+  workArea: item.workplace,
+  salary: item.salary_range,
+}));
 
   return (
     <div className="career-result-page">

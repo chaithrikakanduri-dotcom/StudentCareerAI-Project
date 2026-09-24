@@ -84,6 +84,13 @@ function PlacementPredictionPage() {
       }
 
       setResult(data.data);
+      localStorage.setItem(
+  "placementPredictionData",
+  JSON.stringify({
+    ...data.data,
+    CGPA: formData.CGPA,
+  })
+);
     } catch (err) {
       console.error("Prediction error:", err);
 
