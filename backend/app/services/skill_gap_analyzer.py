@@ -6,8 +6,6 @@ import pandas as pd
 JOB_ROLES_PATH = os.path.join(
     os.path.dirname(__file__),
     "..",
-    "..",
-    "..",
     "datasets",
     "job_roles.csv"
 )
