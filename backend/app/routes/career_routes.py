@@ -146,7 +146,6 @@ def skill_gap_careers():
             os.path.dirname(__file__),
             "..",
             "..",
-            "..",
             "datasets",
             "job_roles.csv"
         )
@@ -213,7 +212,6 @@ def skill_gap_analysis():
 
         csv_path = os.path.join(
             os.path.dirname(__file__),
-            "..",
             "..",
             "..",
             "datasets",
