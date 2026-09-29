@@ -317,7 +317,6 @@ function Profile() {
           "Profile API error:",
           error
         );
-
         // Local AI results remain available.
       }
     };

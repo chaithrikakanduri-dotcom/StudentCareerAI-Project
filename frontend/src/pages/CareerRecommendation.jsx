@@ -13,7 +13,7 @@ const handleSubmit = async (e) => {
 
   try {
     const response = await fetch(
-      "https:///api/career-recommendation",
+      "https://studentcareerai-project-production.up.railway.app/api/career-recommendation",
       {
         method: "POST",
         headers: {
