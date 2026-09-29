@@ -121,7 +121,7 @@ function SkillGap() {
     const loadCareers = async () => {
       try {
         const response = await fetch(
-          "http://127.0.0.1:5000/api/skill-gap-careers"
+          "https://studentcareerai-project-production.up.railway.app/api/skill-gap-careers"
         );
 
         const result = await response.json();
@@ -244,7 +244,7 @@ function SkillGap() {
     const analyzeSkillGap = async () => {
       try {
         const response = await fetch(
-          "http://127.0.0.1:5000/api/skill-gap-analysis",
+          "https://studentcareerai-project-production.up.railway.app/api/skill-gap-careers",
           {
             method: "POST",
             headers: {
@@ -1279,7 +1279,7 @@ function SkillGap() {
                 setAnalysis(null);
 
                 const response = await fetch(
-                  "http://127.0.0.1:5000/api/skill-gap-analysis",
+                   "https://studentcareerai-project-production.up.railway.app/api/skill-gap-analysis",
                   {
                     method: "POST",
 
