@@ -72,7 +72,6 @@ const normalizeSkill = (skill) => {
 // ============================================================
 // CHECK WHETHER STUDENT HAS REQUIRED SKILL
 // ============================================================
-
 const studentHasSkill = (studentSkills, requiredSkill) => {
   const required = normalizeSkill(requiredSkill);
 
@@ -87,13 +86,12 @@ const studentHasSkill = (studentSkills, requiredSkill) => {
       return false;
     }
 
-    // Exact match
+    // Exact skill
     if (student === required) {
       return true;
     }
 
-    // If student's skills are stored as one long text,
-    // check whether the required skill exists in that text.
+    // Check inside complete student skill text
     const studentText = ` ${student} `;
 
     const requiredText = ` ${required} `;
@@ -193,10 +191,7 @@ function SkillGap() {
       if (Array.isArray(rawSkills)) {
         skills = rawSkills;
       } else {
-        skills = String(rawSkills)
-          .split(",")
-          .map((skill) => skill.trim())
-          .filter(Boolean);
+         skills = [String(rawSkills).trim()].filter(Boolean);
       }
 
       // =====================================================
@@ -244,7 +239,7 @@ function SkillGap() {
     const analyzeSkillGap = async () => {
       try {
         const response = await fetch(
-          "https://studentcareerai-project-production.up.railway.app/api/skill-gap-careers",
+          "https://studentcareerai-project-production.up.railway.app/api/skill-gap-analysis",
           {
             method: "POST",
             headers: {
