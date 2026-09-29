@@ -116,7 +116,7 @@ function App() {
 
       // Career analysis
       const analyzeResponse = await fetch(
-        "http://127.0.0.1:5000/api/analyze-resume",
+        "https://studentcareerai-project-production.up.railway.app/api/analyze-resume",
         {
           method: "POST",
           headers: {
@@ -299,7 +299,7 @@ function App() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:5000/api/predict-placement",
+        "https://studentcareerai-project-production.up.railway.app/api/predict-placement",
         {
           method: "POST",
           headers: {
