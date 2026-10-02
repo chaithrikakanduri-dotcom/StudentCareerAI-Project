@@ -8,8 +8,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 JOB_ROLES_PATH = os.path.join(
     os.path.dirname(__file__),
     "..",
-    "..",
-    "..",
     "datasets",
     "job_roles.csv"
 )
